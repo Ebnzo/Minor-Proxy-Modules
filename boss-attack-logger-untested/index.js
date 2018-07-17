@@ -14,7 +14,7 @@ module.exports = function bossattacks(dispatch) {
 	
 	let bossid = 0,
 		bossinfo=''
-	
+////Commands	
 	command.add('bosslogger', () => {
 		enabled = !enabled
 		command.message(enabled ? '(Bosslogger) Enabled' : '(Bosslogger) Disabled')
@@ -24,8 +24,8 @@ module.exports = function bossattacks(dispatch) {
 		showskill = !showskill
 		command.message(showskill ? '(Bosslogger) Show skill id Enabled' : '(Bosslogger) Show skill id Disabled')
 	})
-	
-	dispatch.hook('S_BOSS_GAGE_INFO',2,(event) => {
+////Dispatches	
+	dispatch.hook('S_BOSS_GAGE_INFO',3,(event) => {
 		if(enabled) {
 			bossinfo = (parseInt(event.huntingZoneId) + '_' + parseInt(event.templateId)).toString(),
 			bossid = event.id
@@ -34,11 +34,11 @@ module.exports = function bossattacks(dispatch) {
 		}
 	})
 	
-	dispatch.hook('S_ACTION_STAGE', 1, (event) => {
+	dispatch.hook('S_ACTION_STAGE', 4, (event) => {
 		if(enabled) {
-			if(event.source-bossid==0) {
-				fs.appendFileSync(path.join(__dirname,(Date().slice(4,10)+'_'+bossinfo+'.json')),('['+Date().slice(16,24)+'] Skill:'+event.skill.toString()+' Stage:'+event.stage.toString()+' model:'+event.model+'\r\n'))
-				if(showskill) command.message(event.skill)
+			if(event.gameId-bossid==0) {
+				fs.appendFileSync(path.join(__dirname,(Date().slice(4,10)+'_'+bossinfo+'.json')),('['+Date().slice(16,24)+'] Skill:'+event.skill.toString()+' Stage:'+event.stage.toString()+' model:'+event.templateId+' target:'+event.target.toString()+'\r\n'))
+				if(showskill) sendChat(event.skill);
 			}
 		}
 	})
@@ -53,16 +53,16 @@ module.exports = function bossattacks(dispatch) {
 		if(enabled) {
 			if(event.target-bossid==0 && (event.source-bossid==0 || event.source==0)) {
 				fs.appendFileSync(path.join(__dirname,(Date().slice(4,10)+'_'+bossinfo+'.json')),('['+Date().slice(16,24)+'] Abnormality:'+event.id.toString()+' Stack:'+event.stacks.toString()+'\r\n'))
-				if(showskill) command.message(event.id)
+				if(showskill) sendChat(event.id)
 			}
 		}
 	})
 	
-	dispatch.hook('S_DUNGEON_EVENT_GAGE', 1, event => {
+	/*dispatch.hook('S_DUNGEON_EVENT_GAGE', 1, event => {
 		if(showgageinfo) {
 			fs.appendFileSync(path.join(__dirname,(Date().slice(4,10)+'_gage_'+bossinfo+'.json')),('['+Date().slice(16,24)+'] Type:'+event.type+' Value:'+event.value+' gageType:'+event.gageType+' message:'+event.message+'\r\n'))
 		}
-	})
+	})*/
 
 	
 	dispatch.hook('S_QUEST_BALLOON', 1, event => {
@@ -70,5 +70,18 @@ module.exports = function bossattacks(dispatch) {
 			fs.appendFileSync(path.join(__dirname,(Date().slice(4,10)+'_Quest_'+bossinfo+'.json')),('['+Date().slice(16,24)+'] QuestMessageId:'+event.message.replace(/\D/g,'')+'\r\n'))
 		}
 	})
+	function getTime() {
+        var time = new Date();
+        var timeStr = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);
+        return timeStr;
+    }
+    
+    function sendChat(msg) {
+        dispatch.toClient('S_CHAT', 1, {
+            channel: 1,
+            authorName: 'Boss',
+            message: (getTime() + ' ' + msg)
+        });     
+    }
 
 }
